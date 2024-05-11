@@ -1,0 +1,58 @@
+# Import the required module
+Import-Module Microsoft.Graph.Calendar
+
+# Connect to Microsoft Graph
+Connect-MgGraph -Scopes 'Calendars.ReadWrite'
+
+$Addr = "Griffith_Hall@communityservices1.org"  ##########
+
+
+# Get all licensed users
+    try{
+	    $users = Get-MgUser -All|where{$_.UserPrincipalName -eq $Addr}
+	    #$users = Get-MgUser -All -ErrorAction SilentlyContinue
+    }Catch{
+
+    }
+
+    # Initialize an empty array to store the results
+    $results = @()
+
+    # Loop through each user
+    foreach ($user in $users) {
+        # Define the start and end dates for the query
+        #$startDate = Get-Date "2023-11-01" -AsUTC -Format "yyyy-MM-ddTHH:mm:ss.0000000Z"
+        #$endDate = Get-Date "2024-04-02" -AsUTC -Format "yyyy-MM-ddTHH:mm:ss.0000000Z"
+
+        $startDate = Get-Date "2023-11-01" #-AsUTC -Format "yyyy-MM-dd HH:mm:ss"
+        $endDate = Get-Date "2024-04-02" #-AsUTC -Format "yyyy-MM-dd HH:mm:ss"
+
+        # Get the user's calendar
+    $user.Id
+    $user
+        $calendar = Get-MgUserCalendar -UserId $user.Id
+
+        # Get all events in the user's calendar between the start and end dates
+        $events = Get-MgUserEvent -UserId $user.Id -Property "start,end" -Filter "start/dateTime ge '$startDate' and end/dateTime le '$endDate'"
+
+        # Calculate the total hours booked
+        $totalHours = 0
+        foreach ($event in $events) {
+
+	     #$event.End.DateTime.GetType()
+	    #$event.Start.DateTime.GetType()
+            #$duration = $event.End.DateTime - $event.Start.DateTime
+	    $duration = [datetime]::parseexact(($event.End.DateTime).split('.')[0], 'yyyy-MM-ddTHH:mm:ss', $null) - [datetime]::parseexact(($event.Start.DateTime).split('.')[0], 'yyyy-MM-ddTHH:mm:ss', $null)
+
+	    $totalHours += $duration.TotalHours
+
+        }
+
+        # Add the result to the array
+        $results += [PSCustomObject]@{
+            User = $user.DisplayName
+            Email = $user.Mail
+            TotalHours = $totalHours
+        }
+        $results 
+    }
